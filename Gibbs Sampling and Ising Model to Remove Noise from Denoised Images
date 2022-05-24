@@ -1,0 +1,25 @@
+import numpy as np
+from scipy.stats import norm
+import cv2
+np.random.seed(0)
+
+def Gibbs_sampling_with_Ising_model(image,n,J,std):
+    for k in range(n):
+        for i in range(image.shape[0]):
+            for j in range(image.shape[1]):
+                w = image[j-1,i] + image[j,i-1] + image[j+1,i] + image[j,i+1]
+                p = np.exp(J * w) * norm.pdf(image, loc=1, scale=std)/(np.exp(J * w) * norm.pdf(image, loc=1, scale=std)+np.exp(-J * w) * norm.pdf(image, loc=-1, scale=std))
+                u = np.random.uniform(0, 1, size=[image.shape[0],image.shape[1]])
+                image[u <= p] = 1
+                image[u > p] = -1
+    return image
+
+def Process(image,n,J, std):
+    image[image == 255] = 1
+    image[image == 0] = -1
+    new_img = Gibbs_sampling_with_Ising_model(image,n,J, std)
+    new_img[new_img == 1] = 255
+    new_img[new_img == -1] = 0
+    cv2.imwrite('denoised.png', new_img.astype(np.uint8))
+image = cv2.imread("noise_image.png", cv2.IMREAD_GRAYSCALE)
+Process(image.astype(np.float16), 100,1000,0.5)
